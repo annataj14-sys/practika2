@@ -51,6 +51,7 @@ Direction nextDir = NONE;
 int score = 0;
 int lives = 3;
 bool gameRunning = true;
+bool gameWon = false;
 
 // Призраки
 struct Ghost {
@@ -77,6 +78,18 @@ void InitGame();
 bool isCellFree(int x, int y) {
     if (x < 0 || x >= MAP_WIDTH || y < 0 || y >= MAP_HEIGHT) return false;
     return gameMap[y][x] != 1;
+}
+
+// Функция для проверки, остались ли точки на карте
+bool areDotsRemaining() {
+    for (int i = 0; i < MAP_HEIGHT; i++) {
+        for (int j = 0; j < MAP_WIDTH; j++) {
+            if (gameMap[i][j] == 2) {
+                return true;  // Нашли точку
+            }
+        }
+    }
+    return false;  // Точек не осталось
 }
 
 // Функция для поиска свободной клетки рядом
@@ -211,6 +224,7 @@ void InitGame() {
     score = 0;
     lives = 3;
     gameRunning = true;
+    gameWon = false;
 }
 
 void UpdateGame() {
@@ -268,6 +282,12 @@ void UpdateGame() {
     if (gameMap[pacman.gridY][pacman.gridX] == 2) {
         gameMap[pacman.gridY][pacman.gridX] = 0;
         score += 10;
+
+        // Проверка на победу (все точки съедены)
+        if (!areDotsRemaining()) {
+            gameWon = true;
+            gameRunning = false;
+        }
     }
 
     // Движение призрака
@@ -426,8 +446,20 @@ void DrawGame(HDC hdc) {
     TextOut(hdc, 10, MAP_HEIGHT * TILE_SIZE + 10, buffer, wcslen(buffer));
 
     if (!gameRunning) {
-        SetTextColor(hdc, RGB(255, 0, 0));
-        TextOut(hdc, WINDOW_WIDTH / 2 - 40, WINDOW_HEIGHT / 2, L"GAME OVER", 9);
+        if (gameWon) {
+            SetTextColor(hdc, RGB(0, 255, 0));  // Зеленый цвет для победы
+            TextOut(hdc, WINDOW_WIDTH / 2 - 50, WINDOW_HEIGHT / 2 - 20, L"ТЫ ПОБЕДИЛ!", 12);
+            TextOut(hdc, WINDOW_WIDTH / 2 - 40, WINDOW_HEIGHT / 2 + 10, L"ПОЗДРАВЛЯЮ!", 11);
+
+            // Можно добавить финальный счет
+            wchar_t finalScore[50];
+            wsprintf(finalScore, L"Финальный счет: %d", score);
+            TextOut(hdc, WINDOW_WIDTH / 2 - 60, WINDOW_HEIGHT / 2 + 40, finalScore, wcslen(finalScore));
+        }
+        else {
+            SetTextColor(hdc, RGB(255, 0, 0));  // Красный цвет для проигрыша
+            TextOut(hdc, WINDOW_WIDTH / 2 - 40, WINDOW_HEIGHT / 2, L"GAME OVER", 9);
+        }
     }
 }
 
