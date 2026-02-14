@@ -62,7 +62,7 @@ struct Ghost {
 vector<Ghost> ghosts;
 
 // Кисти для рисования
-HBRUSH hBrushWall, hBrushPacman, hBrushGhost1, hBrushDot;
+HBRUSH hBrushWall, hBrushPacman, hBrushGhost1, hBrushGhost2, hBrushGhost3, hBrushDot;
 HPEN hPenBlack;
 UINT_PTR timerId;
 HWND g_hwnd;
@@ -129,9 +129,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     // Создание кистей
     hBrushWall = CreateSolidBrush(RGB(0, 0, 255));
     hBrushPacman = CreateSolidBrush(RGB(255, 255, 0));
-    hBrushGhost1 = CreateSolidBrush(RGB(255, 0, 0));
+    hBrushGhost1 = CreateSolidBrush(RGB(255, 0, 0));      // Красный
+    hBrushGhost2 = CreateSolidBrush(RGB(255, 192, 203));  // Розовый
+    hBrushGhost3 = CreateSolidBrush(RGB(0, 255, 255));    // Голубой
     hBrushDot = CreateSolidBrush(RGB(255, 255, 255));
-    hPenBlack = CreatePen(PS_SOLID, 1, RGB(0, 0, 0));
 
     srand(time(NULL));
     InitGame();
@@ -150,8 +151,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     DeleteObject(hBrushWall);
     DeleteObject(hBrushPacman);
     DeleteObject(hBrushGhost1);
+    DeleteObject(hBrushGhost2);
+    DeleteObject(hBrushGhost3);
     DeleteObject(hBrushDot);
-    DeleteObject(hPenBlack);
 
     return 0;
 }
@@ -168,19 +170,43 @@ void InitGame() {
     pacmanDir = NONE;
     nextDir = NONE;
 
-    // Находим свободную клетку для красного призрака (центр вверху)
+    ghosts.clear();
+
+    // Красный призрак (первый)
     int ghostX = 9, ghostY = 9;
     findFreeCell(ghostX, ghostY);
+    Ghost g1;
+    g1.pos.gridX = ghostX;
+    g1.pos.gridY = ghostY;
+    g1.pos.x = g1.pos.gridX * TILE_SIZE + TILE_SIZE / 2;
+    g1.pos.y = g1.pos.gridY * TILE_SIZE + TILE_SIZE / 2;
+    g1.dir = RIGHT;
+    g1.color = RGB(255, 0, 0);  // Красный
+    ghosts.push_back(g1);
 
-    ghosts.clear();
-    Ghost g;
-    g.pos.gridX = ghostX;
-    g.pos.gridY = ghostY;
-    g.pos.x = g.pos.gridX * TILE_SIZE + TILE_SIZE / 2;
-    g.pos.y = g.pos.gridY * TILE_SIZE + TILE_SIZE / 2;
-    g.dir = RIGHT;
-    g.color = RGB(255, 0, 0);
-    ghosts.push_back(g);
+    // Розовый призрак (второй)
+    ghostX = 8; ghostY = 10;  // Немного другая начальная позиция
+    findFreeCell(ghostX, ghostY);
+    Ghost g2;
+    g2.pos.gridX = ghostX;
+    g2.pos.gridY = ghostY;
+    g2.pos.x = g2.pos.gridX * TILE_SIZE + TILE_SIZE / 2;
+    g2.pos.y = g2.pos.gridY * TILE_SIZE + TILE_SIZE / 2;
+    g2.dir = LEFT;
+    g2.color = RGB(255, 192, 203);  // Розовый
+    ghosts.push_back(g2);
+
+    // Голубой призрак (третий)
+    ghostX = 10; ghostY = 10;  // Еще одна позиция
+    findFreeCell(ghostX, ghostY);
+    Ghost g3;
+    g3.pos.gridX = ghostX;
+    g3.pos.gridY = ghostY;
+    g3.pos.x = g3.pos.gridX * TILE_SIZE + TILE_SIZE / 2;
+    g3.pos.y = g3.pos.gridY * TILE_SIZE + TILE_SIZE / 2;
+    g3.dir = UP;
+    g3.color = RGB(0, 255, 255);  // Голубой
+    ghosts.push_back(g3);
 
     score = 0;
     lives = 3;
@@ -368,10 +394,22 @@ void DrawGame(HDC hdc) {
         (int)(pacman.x + TILE_SIZE / 2),
         (int)(pacman.y + TILE_SIZE / 2));
 
-    // Рисование призрака
-    SelectObject(hdc, hBrushGhost1);
-    if (!ghosts.empty()) {
-        Ghost& g = ghosts[0];
+    // Рисование призраков
+    for (size_t i = 0; i < ghosts.size(); i++) {
+        Ghost& g = ghosts[i];
+
+        // Выбираем кисть в зависимости от цвета призрака
+        if (g.color == RGB(255, 0, 0)) {
+            SelectObject(hdc, hBrushGhost1);  // Красный
+        }
+        else if (g.color == RGB(255, 192, 203)) {
+            SelectObject(hdc, hBrushGhost2);  // Розовый
+        }
+        else if (g.color == RGB(0, 255, 255)) {
+            SelectObject(hdc, hBrushGhost3);  // Голубой
+        }
+
+        SelectObject(hdc, hPenBlack);
         Ellipse(hdc,
             (int)(g.pos.x - TILE_SIZE / 2),
             (int)(g.pos.y - TILE_SIZE / 2),
